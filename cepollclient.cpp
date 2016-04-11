@@ -14,9 +14,10 @@ CEpollClient::CEpollClient(int iUserCount, const char* pIP, int iPort)
     for(int iuserid=0; iuserid<iUserCount ; iuserid++)
     {
         m_pAllUserStatus[iuserid].iUserStatus = FREE;
-        sprintf(m_pAllUserStatus[iuserid].cSendbuff, "GET / HTTP/1.1\r\nHost:localhost\r\n\r\n", iuserid);
+        sprintf(m_pAllUserStatus[iuserid].cSendbuff, "GET /oss-test-bucket/nihao HTTP/1.1\r\nHost:localhost", iuserid);
         m_pAllUserStatus[iuserid].iBuffLen = strlen(m_pAllUserStatus[iuserid].cSendbuff);
         m_pAllUserStatus[iuserid].iSockFd = -1;
+	m_pAllUserStatus[iuserid].isSend = 0;
     }
     memset(m_iSockFd_UserId, 0xFF, sizeof(m_iSockFd_UserId));
 }
@@ -49,6 +50,7 @@ int CEpollClient::ConnectToServer(int iUserId,const char *pServerIp,unsigned sho
     connect(m_pAllUserStatus[iUserId].iSockFd, (const sockaddr*)&addr, sizeof(addr));
     m_pAllUserStatus[iUserId].iUserStatus = CONNECT_OK;
     m_pAllUserStatus[iUserId].iSockFd = m_pAllUserStatus[iUserId].iSockFd;
+    m_pAllUserStatus[iUserId].isSend = 0;
 
     return m_pAllUserStatus[iUserId].iSockFd;
 }
@@ -58,7 +60,12 @@ int CEpollClient::SendToServerData(int iUserId)
     int isendsize = -1;
     if( CONNECT_OK == m_pAllUserStatus[iUserId].iUserStatus || RECV_OK == m_pAllUserStatus[iUserId].iUserStatus)
     {
-        isendsize = send(m_pAllUserStatus[iUserId].iSockFd, m_pAllUserStatus[iUserId].cSendbuff, 0/*m_pAllUserStatus[iUserId].iBuffLen*/, MSG_NOSIGNAL);
+	//这里只发送不完整的http 请求头部，去模拟Nginx 高并发情况
+	if (m_pAllUserStatus[iUserId].isSend != 0)
+	        isendsize = send(m_pAllUserStatus[iUserId].iSockFd, m_pAllUserStatus[iUserId].cSendbuff, 0/*m_pAllUserStatus[iUserId].iBuffLen*/, MSG_NOSIGNAL);
+	else	
+        	isendsize = send(m_pAllUserStatus[iUserId].iSockFd, m_pAllUserStatus[iUserId].cSendbuff, m_pAllUserStatus[iUserId].iBuffLen, MSG_NOSIGNAL);
+	m_pAllUserStatus[iUserId].isSend = 1;
         if(isendsize < 0)
         {
             cout <<"[CEpollClient error]: SendToServerData, send fail, reason is:"<<strerror(errno)<<",errno is:"<<errno<<endl;

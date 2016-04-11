@@ -35,6 +35,7 @@ struct UserStatus
     int iSockFd;//用户状态关联的socketfd
     char cSendbuff[1024];//发送的数据内容
     int iBuffLen;//发送数据内容的长度
+    int isSend; //数据是否发送, 这里只发送不完整的HTTP 请求头部
     unsigned int uEpollEvents;//Epoll events
 };
 
