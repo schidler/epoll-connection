@@ -1,0 +1,5 @@
+功能: 向对端host:port发起并保持connection_numbers 条tcp连接, 作为测试nginx 在高并发下的背景连接
+
+./epoll_connection host port connection_numbers
+eg. ./epoll_connection 10.101.166.30 80 30000
+
